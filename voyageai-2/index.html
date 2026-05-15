@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VoyageAI – AI Utazástervező</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d0d1a;font-family:'DM Sans',sans-serif;color:#e8d5b0;min-height:100vh}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:#0d0d1a}
+    ::-webkit-scrollbar-thumb{background:#2e2e4a;border-radius:2px}
+    input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.4)}
+    @keyframes fi{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes dot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+
+    /* header */
+    .header{background:linear-gradient(180deg,#0d0d1a,#1a0d00);border-bottom:1px solid #2a2a1a;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+    .logo{display:flex;align-items:center;gap:9px}
+    .logo h1{font-family:'Playfair Display',serif;font-size:19px;font-weight:800;background:linear-gradient(135deg,#e8d5b0,#e8a045);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo p{color:#555;font-size:10px;margin-top:-1px}
+    .nav-btns{display:flex;gap:5px}
+    .nav-btn{padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;border:1px solid #2e2e3a;background:transparent;color:#555;font-family:inherit;transition:all .2s}
+    .nav-btn.active{border-color:#e8a045;background:#2a1a0a;color:#e8a045}
+
+    /* main */
+    .main{max-width:640px;margin:0 auto;padding:18px 14px}
+
+    /* progress */
+    .progress-steps{display:flex;margin-bottom:10px}
+    .step-dot-wrap{flex:1;text-align:center}
+    .step-dot{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:default;transition:all .3s;border:2px solid #2a2a3a;background:#14141f}
+    .step-dot.done{background:linear-gradient(135deg,#e8a045,#c96a1a);border:none;font-size:12px;cursor:pointer}
+    .step-dot.active{background:#1e1e35;border-color:#e8a045}
+    .step-label{font-size:9px;color:#333}
+    .step-label.active{color:#e8a045}
+    .step-label.done{color:#b89050}
+    .progress-bar{height:3px;background:#1c1c30;border-radius:2px;margin-bottom:22px}
+    .progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#e8a045,#c96a1a);transition:width .4s ease}
+
+    /* card */
+    .card{background:#111120;border-radius:20px;border:1px solid #252540;padding:24px 20px;margin-bottom:18px;box-shadow:0 8px 48px #00000070;animation:fi .35s ease}
+    .card h2{font-family:'Playfair Display',serif;font-size:21px;color:#e8d5b0;margin-bottom:4px}
+    .card-line{height:2px;width:36px;background:linear-gradient(90deg,#e8a045,transparent);margin-bottom:20px}
+
+    /* inputs */
+    .inp{width:100%;padding:13px 16px;border-radius:10px;border:2px solid #2e2e4a;background:#1a1a28;color:#e8d5b0;font-size:15px;font-family:'DM Sans',sans-serif;outline:none}
+    .inp:focus{border-color:#e8a04580}
+    .inp-big{font-size:18px}
+    .inp-num{font-size:20px;font-weight:700}
+    label.lbl{display:block;color:#c5c5d8;font-size:14px;font-weight:600;margin-bottom:10px}
+    .field{display:flex;flex-direction:column;gap:0}
+    .fields{display:flex;flex-direction:column;gap:14px}
+    textarea.inp{resize:vertical;height:72px}
+
+    /* chips */
+    .chips{display:flex;flex-wrap:wrap;gap:9px}
+    .chip{padding:9px 15px;border-radius:30px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:all .2s;border:2px solid #2a2a3a;background:#1a1a28;color:#aaa;font-weight:400}
+    .chip.on{border-color:#e8a045;background:linear-gradient(135deg,#e8a045,#c96a1a);color:#fff;font-weight:700}
+
+    /* nav buttons */
+    .nav-row{display:flex;gap:10px}
+    .btn-back{flex:1;padding:13px;border-radius:12px;border:2px solid #252540;background:transparent;color:#666;font-size:14px;cursor:pointer;font-family:inherit}
+    .btn-next{flex:2;padding:13px;border-radius:12px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;background:linear-gradient(135deg,#e8a045,#c96a1a);color:#fff}
+    .btn-next:disabled{background:#222230;color:#444;cursor:not-allowed}
+    .btn-go{flex:2;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:700;cursor:pointer;font-family:'Playfair Display',serif;background:linear-gradient(135deg,#e8a045,#c96a1a);color:#fff}
+    .btn-go:disabled{background:#222230;color:#444;cursor:not-allowed}
+
+    /* duration badge */
+    .dur-badge{background:#1e1e35;border-radius:10px;padding:10px 16px;border:1px solid #e8a04540;font-weight:700;color:#e8a045}
+
+    /* chat */
+    .chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 90px);animation:fi .3s ease}
+    .chat-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#12121f;border:1px solid #2e2e4a;border-radius:13px;margin-bottom:11px;flex-shrink:0}
+    .chat-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#e8a045,#c96a1a);display:flex;align-items:center;justify-content:center;font-size:15px}
+    .chat-name{color:#e8d5b0;font-weight:700;font-size:13px}
+    .chat-status{color:#4a9a4a;font-size:10px}
+    .btn-reset{padding:5px 10px;border-radius:7px;font-size:11px;border:1px solid #2e2e4a;background:#1a1a28;color:#888;cursor:pointer;font-family:inherit}
+
+    .quick-links{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;flex-shrink:0}
+    .quick-link{padding:5px 11px;border-radius:18px;font-size:11px;background:#1e1e35;color:#c5c5d8;font-weight:600;text-decoration:none;border:1px solid #2e2e4a}
+
+    .messages{flex:1;overflow-y:auto;padding-right:2px}
+    .msg-wrap{display:flex;margin-bottom:14px;animation:fi .3s ease}
+    .msg-wrap.user{justify-content:flex-end}
+    .msg-wrap.bot{justify-content:flex-start}
+    .msg-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#e8a045,#c96a1a);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-right:8px;margin-top:3px}
+    .bubble{max-width:86%;padding:11px 15px;font-size:13px;line-height:1.75;border-radius:16px 16px 16px 4px;background:#1e1e35;color:#c5c5d8;border:1px solid #2e2e4a}
+    .bubble.user{border-radius:16px 16px 4px 16px;background:linear-gradient(135deg,#e8a045,#c96a1a);color:#fff;border:none}
+    .bubble h1{font-family:'Playfair Display',serif;font-size:16px;color:#e8a045;font-weight:800;margin:10px 0 5px}
+    .bubble h2{font-size:14px;color:#e8d5b0;font-weight:700;margin:8px 0 3px}
+    .bubble h3{font-size:13px;color:#c8b080;font-weight:600;margin:6px 0 2px}
+    .bubble li{padding-left:10px;margin-bottom:1px}
+    .bubble a{color:#e8a045;word-break:break-all;text-decoration:underline}
+    .bubble .gap{height:5px}
+
+    .typing{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+    .typing-bubble{background:#1e1e35;border:1px solid #2e2e4a;border-radius:16px 16px 16px 4px;padding:11px 16px;display:flex;gap:5px;align-items:center}
+    .typing-dot{width:7px;height:7px;border-radius:50%;background:#e8a045}
+    .typing-dot:nth-child(1){animation:dot 1.2s ease 0s infinite}
+    .typing-dot:nth-child(2){animation:dot 1.2s ease .2s infinite}
+    .typing-dot:nth-child(3){animation:dot 1.2s ease .4s infinite}
+
+    .action-chips{display:flex;gap:5px;padding-top:8px;padding-bottom:6px;flex-wrap:wrap;flex-shrink:0}
+    .action-chip{padding:4px 10px;border-radius:18px;font-size:10px;border:1px solid #2e2e4a;background:#1a1a28;color:#888;cursor:pointer;font-family:inherit}
+
+    .input-row{display:flex;gap:9px;flex-shrink:0}
+    .chat-inp{flex:1;padding:12px 14px;border-radius:12px;border:2px solid #2e2e4a;background:#1a1a28;color:#e8d5b0;font-size:13px;font-family:inherit;outline:none;resize:none;height:48px;line-height:1.4}
+    .chat-inp:focus{border-color:#e8a04580}
+    .send-btn{width:48px;height:48px;border-radius:12px;border:none;background:linear-gradient(135deg,#e8a045,#c96a1a);color:#fff;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .send-btn:disabled{background:#2a2a3a;cursor:not-allowed}
+
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <span style="font-size:22px">🌍</span>
+    <div>
+      <h1>VoyageAI</h1>
+      <p>AI utazástervező</p>
+    </div>
+  </div>
+  <div class="nav-btns">
+    <button class="nav-btn active" id="btn-wizard" onclick="showView('wizard')">🔧 Varázsló</button>
+    <button class="nav-btn" id="btn-chat" onclick="showView('chat')">💬 Chat</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══ WIZARD ══ -->
+  <div id="view-wizard">
+    <!-- Progress -->
+    <div class="progress-steps" id="progress-steps"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <!-- Step card -->
+    <div class="card" id="step-card">
+      <h2 id="step-title"></h2>
+      <div class="card-line"></div>
+      <div id="step-body"></div>
+    </div>
+
+    <!-- Nav -->
+    <div class="nav-row">
+      <button class="btn-back hidden" id="btn-back" onclick="prevStep()">← Vissza</button>
+      <button class="btn-next" id="btn-next" onclick="nextStep()">Következő →</button>
+    </div>
+  </div>
+
+  <!-- ══ CHAT ══ -->
+  <div id="view-chat" class="hidden">
+    <div class="chat-wrap">
+      <div class="chat-header">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div class="chat-avatar">🌍</div>
+          <div>
+            <div class="chat-name">VoyageAI Asszisztens</div>
+            <div class="chat-status">● Online</div>
+          </div>
+        </div>
+        <button class="btn-reset" onclick="resetChat()">🔄 Újratervezés</button>
+      </div>
+
+      <div class="quick-links" id="quick-links"></div>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="action-chips">
+        <button class="action-chip" onclick="setInp('Adj olcsóbb alternatívát!')">Adj olcsóbb alternatívát!</button>
+        <button class="action-chip" onclick="setInp('Más dátum javaslatot kérek')">Más dátum javaslat</button>
+        <button class="action-chip" onclick="setInp('Repülőjegy linkek')">Repülőjegy linkek</button>
+        <button class="action-chip" onclick="setInp('Szállás linkek')">Szállás linkek</button>
+        <button class="action-chip" onclick="setInp('Büdzsé összesítő')">Büdzsé összesítő</button>
+        <button class="action-chip" onclick="setInp('Napi programterv')">Napi programterv</button>
+      </div>
+
+      <div class="input-row">
+        <textarea class="chat-inp" id="chat-inp" placeholder="Írj kérdést… Shift+Enter = új sor" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const STEPS = [
+  {id:"destination", label:"Úti cél",    icon:"🌍"},
+  {id:"transport",   label:"Közlekedés", icon:"✈️"},
+  {id:"dates",       label:"Dátumok",    icon:"📅"},
+  {id:"accommodation",label:"Szállás",   icon:"🏨"},
+  {id:"style",       label:"Jelleg",     icon:"🎭"},
+  {id:"budget",      label:"Büdzsé",     icon:"💰"},
+];
+const TRANSPORT = [{id:"plane",label:"Repülő",icon:"✈️"},{id:"car",label:"Autó",icon:"🚗"},{id:"train",label:"Vonat",icon:"🚂"},{id:"bus",label:"Busz",icon:"🚌"},{id:"ship",label:"Hajó",icon:"🚢"}];
+const ACCOMM    = [{id:"hotel",label:"Hotel",icon:"🏨"},{id:"apartment",label:"Apartman",icon:"🏠"},{id:"airbnb",label:"Airbnb",icon:"🔑"},{id:"hostel",label:"Hostel",icon:"🛏️"},{id:"resort",label:"Resort",icon:"🌴"},{id:"villa",label:"Villa",icon:"🏡"}];
+const STYLES    = [{id:"sightseeing",label:"Városnézés",icon:"🏛️"},{id:"museum",label:"Múzeum",icon:"🖼️"},{id:"beach",label:"Strand",icon:"🏖️"},{id:"spa",label:"Spa/Wellness",icon:"💆"},{id:"work",label:"Munkaút",icon:"💼"},{id:"adventure",label:"Kaland",icon:"🏔️"},{id:"food",label:"Gasztronómia",icon:"🍽️"},{id:"shopping",label:"Bevásárlás",icon:"🛍️"},{id:"nightlife",label:"Éjszakai élet",icon:"🎉"},{id:"family",label:"Családi",icon:"👨‍👩‍👧"}];
+const DEP_TIMES = [{id:"early_morning",label:"Kora reggel (5–8h)"},{id:"morning",label:"Reggel (8–12h)"},{id:"afternoon",label:"Délután (12–17h)"},{id:"evening",label:"Este (17–22h)"},{id:"night",label:"Éjjel (22–5h)"},{id:"any",label:"Bármelyik"}];
+const RET_TIMES = [{id:"morning",label:"Reggel (8–12h)"},{id:"afternoon",label:"Délután (12–17h)"},{id:"evening",label:"Este (17–22h)"},{id:"night",label:"Éjjel (22–5h)"},{id:"any",label:"Bármelyik"}];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let step = 0;
+let fd = {destination:"",origin:"Budapest",transport:[],startDate:"",endDate:"",duration:"",departureTime:"any",returnTime:"any",accommodation:[],tripStyle:[],budget:"",currency:"EUR",travelers:"2",specialRequests:""};
+let messages = [];
+let busy = false;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function label(arr, ids) { return ids.map(id => arr.find(o=>o.id===id)?.label).filter(Boolean).join(", "); }
+
+function buildPrompt() {
+  const dep = DEP_TIMES.find(t=>t.id===fd.departureTime)?.label||"Bármelyik";
+  const ret = RET_TIMES.find(t=>t.id===fd.returnTime)?.label||"Bármelyik";
+  return `Kérlek, készíts TELJES utazási tervet magyarul!
+
+🌍 ADATOK:
+• Kiindulópont: ${fd.origin||"Budapest"}
+• Úti cél: ${fd.destination}
+• Közlekedés: ${label(TRANSPORT,fd.transport)}
+• Indulás: ${fd.startDate} (${dep})
+• Visszaérkezés: ${fd.endDate} (${ret})
+• Időtartam: ${fd.duration} nap
+• Szállás: ${label(ACCOMM,fd.accommodation)}
+• Jelleg: ${label(STYLES,fd.tripStyle)}
+• Büdzsé: ${fd.budget} ${fd.currency} (${fd.travelers} főre)
+• Különleges: ${fd.specialRequests||"Nincs"}
+
+Töltsd ki MIND a 11 szekciót részletesen:
+
+1. ✈️ REPÜLŐJEGYEK – Skyscanner, Google Flights, Kayak, WizzAir, Ryanair linkek; becsült árak; mikor foglalj; direkt vs átszálló.
+2. 🏨 SZÁLLÁS – Booking.com, Airbnb, Hostelworld linkek; legjobb városrészek; budget/közepes/prémium árak; összköltség.
+3. 🚖 REPÜLŐTÉRI TRANSZFER – taxi, Uber, busz, metro, shuttle + árak.
+4. 🚘 AUTÓBÉRLÉS – AutoEurope, Rentalcars, Sixt linkek + árak.
+5. 📅 NAPI PROGRAM – minden napra: reggeli/déli/délutáni/esti program + étkezési ajánló.
+6. 🏛️ TOP LÁTNIVALÓK – top 10, belépőárak, nyitvatartás, ingyenes vs fizetős.
+7. 🍽️ ÉTTERMEK – budget helyek (€5–15), helyi specialitások, linkek.
+8. 🎟️ KEDVEZMÉNYEK – City Card, Tourist Pass, diák kedvezmények, ingyenes napok.
+9. ☀️ IDŐJÁRÁS & ÖLTÖZÉS – várható időjárás, mit pakkolj.
+10. 🌐 KULTURÁLIS TUDNIVALÓK – szokások, illemszabályok, biztonsági tippek, hasznos kifejezések.
+11. 💰 BÜDZSÉ ÖSSZESÍTŐ – minden tétel részletezve; összesen X ${fd.currency}; megtakarítási tippek.
+
+Ha a megadott dátumra nem találsz jó lehetőséget, javasolj alternatív időpontokat és segíts az újratervezésben!`;
+}
+
+function canGo() {
+  switch(step) {
+    case 0: return fd.destination.trim().length > 0;
+    case 1: return fd.transport.length > 0;
+    case 2: return fd.startDate && fd.endDate;
+    case 3: return fd.accommodation.length > 0;
+    case 4: return fd.tripStyle.length > 0;
+    case 5: return fd.budget.length > 0;
+    default: return true;
+  }
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function renderProgress() {
+  const stepsEl = document.getElementById("progress-steps");
+  stepsEl.innerHTML = STEPS.map((s,i) => {
+    const done = i < step, active = i === step;
+    return `<div class="step-dot-wrap">
+      <div class="step-dot ${done?"done":active?"active":""}" onclick="${done?`goToStep(${i})`:""}">${done?"✓":s.icon}</div>
+      <div class="step-label ${done?"done":active?"active":""}">${s.label}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("progress-fill").style.width = `${(step/(STEPS.length-1))*100}%`;
+}
+
+function goToStep(i) { step = i; renderStep(); }
+
+// ── Step renderer ─────────────────────────────────────────────────────────────
+function renderStep() {
+  renderProgress();
+  document.getElementById("step-title").textContent = `${STEPS[step].icon} ${STEPS[step].label}`;
+  document.getElementById("btn-back").classList.toggle("hidden", step === 0);
+
+  const isLast = step === STEPS.length - 1;
+  const next = document.getElementById("btn-next");
+  next.textContent = isLast ? "🚀 Terv generálása!" : "Következő →";
+  next.className = isLast ? "btn-go" : "btn-next";
+  next.disabled = !canGo();
+
+  const body = document.getElementById("step-body");
+
+  switch(step) {
+    case 0:
+      body.innerHTML = `
+        <div class="fields">
+          <div><label class="lbl">Honnan utazol?</label><input class="inp" placeholder="pl. Budapest" value="${fd.origin}" oninput="fd.origin=this.value"/></div>
+          <div><label class="lbl">Hova szeretnél utazni? *</label><input class="inp inp-big" placeholder="pl. Párizs, Bali, New York…" value="${fd.destination}" oninput="fd.destination=this.value;updateNext()" autofocus/></div>
+          <div><label class="lbl">Hány fő utazik?</label><div class="chips">${["1","2","3","4","5+"].map(n=>`<button class="chip ${fd.travelers===n?"on":""}" onclick="pick('travelers','${n}',this)">${n} fő</button>`).join("")}</div></div>
+        </div>`;
+      break;
+    case 1:
+      body.innerHTML = `<label class="lbl">Közlekedési eszköz (több is) *</label><div class="chips">${TRANSPORT.map(o=>`<button class="chip ${fd.transport.includes(o.id)?"on":""}" onclick="toggleArr('transport','${o.id}',this)">${o.icon} ${o.label}</button>`).join("")}</div>`;
+      break;
+    case 2:
+      body.innerHTML = `
+        <div class="fields">
+          <div><label class="lbl">Indulás dátuma *</label><input type="date" class="inp" value="${fd.startDate}" oninput="fd.startDate=this.value;calcDur();updateNext()"/></div>
+          <div><label class="lbl">Visszaérkezés dátuma *</label><input type="date" class="inp" value="${fd.endDate}" oninput="fd.endDate=this.value;calcDur();updateNext()"/></div>
+          <div id="dur-badge" class="${fd.duration?"":"hidden"} dur-badge">⏱ ${fd.duration} nap</div>
+          <div><label class="lbl">Mikor szeretnél indulni?</label><div class="chips">${DEP_TIMES.map(t=>`<button class="chip ${fd.departureTime===t.id?"on":""}" onclick="pick('departureTime','${t.id}',this)">${t.label}</button>`).join("")}</div></div>
+          <div><label class="lbl">Mikor szeretnél visszaérkezni?</label><div class="chips">${RET_TIMES.map(t=>`<button class="chip ${fd.returnTime===t.id?"on":""}" onclick="pick('returnTime','${t.id}',this)">${t.label}</button>`).join("")}</div></div>
+        </div>`;
+      break;
+    case 3:
+      body.innerHTML = `<label class="lbl">Szállás típusa (több is) *</label><div class="chips">${ACCOMM.map(o=>`<button class="chip ${fd.accommodation.includes(o.id)?"on":""}" onclick="toggleArr('accommodation','${o.id}',this)">${o.icon} ${o.label}</button>`).join("")}</div>`;
+      break;
+    case 4:
+      body.innerHTML = `<label class="lbl">Utazás jellege (több is) *</label><div class="chips">${STYLES.map(o=>`<button class="chip ${fd.tripStyle.includes(o.id)?"on":""}" onclick="toggleArr('tripStyle','${o.id}',this)">${o.icon} ${o.label}</button>`).join("")}</div>`;
+      break;
+    case 5:
+      body.innerHTML = `
+        <div class="fields">
+          <div>
+            <label class="lbl">Teljes büdzsé (${fd.travelers} főre) *</label>
+            <div style="display:flex;gap:10px">
+              <input type="number" class="inp inp-num" style="flex:1" placeholder="pl. 1500" value="${fd.budget}" oninput="fd.budget=this.value;updateNext()"/>
+              <select class="inp" style="width:94px" onchange="fd.currency=this.value">
+                <option value="EUR" ${fd.currency==="EUR"?"selected":""}>EUR €</option>
+                <option value="HUF" ${fd.currency==="HUF"?"selected":""}>HUF Ft</option>
+                <option value="USD" ${fd.currency==="USD"?"selected":""}>USD $</option>
+                <option value="GBP" ${fd.currency==="GBP"?"selected":""}>GBP £</option>
+              </select>
+            </div>
+          </div>
+          <div class="chips">${["500","1000","1500","2000","3000","5000"].map(b=>`<button class="chip ${fd.budget===b?"on":""}" onclick="pickBudget('${b}',this)">${b} ${fd.currency}</button>`).join("")}</div>
+          <div><label class="lbl">Különleges kérések (opcionális)</label><textarea class="inp" placeholder="pl. vegetáriánus, gyerekbarát…" oninput="fd.specialRequests=this.value">${fd.specialRequests}</textarea></div>
+        </div>`;
+      break;
+  }
+}
+
+function calcDur() {
+  if (fd.startDate && fd.endDate) {
+    const d = Math.round((new Date(fd.endDate) - new Date(fd.startDate)) / 86400000);
+    fd.duration = String(Math.max(0, d));
+    const b = document.getElementById("dur-badge");
+    if (b) { b.textContent = `⏱ ${fd.duration} nap`; b.classList.remove("hidden"); }
+  }
+}
+function pick(key, val, btn) {
+  fd[key] = val;
+  btn.closest(".chips").querySelectorAll(".chip").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  updateNext();
+}
+function pickBudget(val, btn) {
+  fd.budget = val;
+  btn.closest(".chips").querySelectorAll(".chip").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  const inp = document.querySelector(".inp-num");
+  if (inp) inp.value = val;
+  updateNext();
+}
+function toggleArr(key, val, btn) {
+  if (fd[key].includes(val)) fd[key] = fd[key].filter(v=>v!==val);
+  else fd[key] = [...fd[key], val];
+  btn.classList.toggle("on", fd[key].includes(val));
+  updateNext();
+}
+function updateNext() {
+  const next = document.getElementById("btn-next");
+  if (next) next.disabled = !canGo();
+}
+function prevStep() { if (step > 0) { step--; renderStep(); } }
+function nextStep() {
+  if (!canGo()) return;
+  if (step < STEPS.length - 1) { step++; renderStep(); }
+  else startChat();
+}
+
+// ── View switching ────────────────────────────────────────────────────────────
+function showView(v) {
+  document.getElementById("view-wizard").classList.toggle("hidden", v !== "wizard");
+  document.getElementById("view-chat").classList.toggle("hidden", v !== "chat");
+  document.getElementById("btn-wizard").classList.toggle("active", v === "wizard");
+  document.getElementById("btn-chat").classList.toggle("active", v === "chat");
+}
+
+// ── Quick links ───────────────────────────────────────────────────────────────
+function renderQuickLinks() {
+  const dE = encodeURIComponent(fd.destination);
+  const oE = encodeURIComponent(fd.origin||"Budapest");
+  const links = [
+    {l:"✈️ Skyscanner", h:`https://www.skyscanner.net/transport/flights/${oE}/${dE}/`},
+    {l:"🏨 Booking.com", h:`https://www.booking.com/searchresults.hu.html?ss=${dE}&checkin=${fd.startDate}&checkout=${fd.endDate}`},
+    {l:"🔑 Airbnb",      h:`https://www.airbnb.com/s/${dE}/homes?checkin=${fd.startDate}&checkout=${fd.endDate}`},
+    {l:"🚗 AutoEurope",  h:`https://www.autoeurope.hu/car-rental/${dE}/`},
+    {l:"🎟️ GetYourGuide",h:`https://www.getyourguide.com/s/?q=${dE}`},
+    {l:"☀️ Időjárás",    h:`https://www.timeanddate.com/weather/${dE}`},
+  ];
+  document.getElementById("quick-links").innerHTML = links.map(q=>`<a class="quick-link" href="${q.h}" target="_blank">${q.l}</a>`).join("");
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function startChat() {
+  renderQuickLinks();
+  showView("chat");
+  messages = [];
+  const prompt = buildPrompt();
+  addMsg("user", prompt);
+  callAPI();
+}
+
+function resetChat() {
+  messages = [];
+  document.getElementById("messages").innerHTML = "";
+  showView("wizard");
+  step = 0;
+  renderStep();
+}
+
+function setInp(text) {
+  document.getElementById("chat-inp").value = text;
+  document.getElementById("chat-inp").focus();
+}
+
+function handleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+async function sendMessage() {
+  const inp = document.getElementById("chat-inp");
+  const text = inp.value.trim();
+  if (!text || busy) return;
+  inp.value = "";
+  addMsg("user", text);
+  await callAPI();
+}
+
+function addMsg(role, content) {
+  messages.push({role, content});
+  renderMessages();
+}
+
+function renderMessages() {
+  const el = document.getElementById("messages");
+  el.innerHTML = messages.map(m => {
+    const isU = m.role === "user";
+    const html = formatMsg(m.content);
+    return `<div class="msg-wrap ${isU?"user":"bot"}">
+      ${!isU ? `<div class="msg-avatar">🌍</div>` : ""}
+      <div class="bubble ${isU?"user":""}">${html}</div>
+    </div>`;
+  }).join("");
+  el.scrollTop = el.scrollHeight;
+}
+
+function formatMsg(text) {
+  return text.split("\n").map(line => {
+    line = line
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
+    if (line.startsWith("# "))  return `<h1>${line.slice(2)}</h1>`;
+    if (line.startsWith("## ")) return `<h2>${line.slice(3)}</h2>`;
+    if (line.startsWith("### "))return `<h3>${line.slice(4)}</h3>`;
+    if (line.match(/^[-•]\s/))  return `<div class="li">· ${line.slice(2)}</div>`;
+    if (line.match(/^\d+\.\s/)) return `<div class="li" style="color:#e8d5b0;font-weight:600">${line}</div>`;
+    if (!line.trim())           return `<div class="gap"></div>`;
+    return `<div>${line}</div>`;
+  }).join("");
+}
+
+function showTyping() {
+  const el = document.getElementById("messages");
+  el.innerHTML += `<div class="typing" id="typing">
+    <div class="msg-avatar">🌍</div>
+    <div class="typing-bubble">
+      <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+    </div>
+  </div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+
+async function callAPI() {
+  busy = true;
+  document.getElementById("send-btn").disabled = true;
+  showTyping();
+  try {
+    const res = await fetch("/.netlify/functions/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ messages }),
+    });
+    const data = await res.json();
+    hideTyping();
+    if (data.error) throw new Error(data.error);
+    addMsg("assistant", data.reply);
+  } catch(e) {
+    hideTyping();
+    addMsg("assistant", `⚠️ Hiba: ${e.message}`);
+  }
+  busy = false;
+  document.getElementById("send-btn").disabled = false;
+  document.getElementById("chat-inp").focus();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderStep();
+</script>
+</body>
+</html>
